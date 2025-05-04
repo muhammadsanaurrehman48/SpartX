@@ -37,6 +37,9 @@ const SignUp = () => {
     lastName: '',
     shop_name: '',
     address: '',
+    city: '',
+    country: '',
+    shop_number: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -104,12 +107,18 @@ const SignUp = () => {
   const validateStep2 = () => {
     const newErrors = {};
 
-    if (userType === 'carOwner') {
-      if (!formData.firstName.trim()) {
-        newErrors.firstName = "First name is required";
-      }
-      if (!formData.lastName.trim()) {
-        newErrors.lastName = "Last name is required";
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+    
+    if (userType === 'shopOwner' && !formData.shop_number.trim()) {
+      if (!formData.shop_number.trim()) {
+        newErrors.phone_number = "Shop Phone number is required";
+      } else if (!/^\d{11}$/.test(formData.shop_number.replace(/[^\d]/g, ''))) {
+        newErrors.phone_number = "Please enter a valid 10-digit phone number";
       }
     }
 
@@ -118,7 +127,15 @@ const SignUp = () => {
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
+      newErrors.address = "Street address is required";
+    }
+
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required";
+    }
+
+    if (!formData.country.trim()) {
+      newErrors.country = "Country is required";
     }
 
     setErrors(newErrors);
@@ -143,11 +160,74 @@ const SignUp = () => {
 
     if (validateStep2()) {
       // Here you would handle form submission to backend
-      console.log("Form submitted with:", formData);
+      // console.log("Form submitted with:", formData);
       // For now just log the data
-      alert("Sign-up successful! (This is just a frontend demo)");
+      if (userType === 'carOwner') {
+        const success = createCarOwner({
+          username: formData.username,
+          email: formData.email,
+          phoneNumber: formData.phone_number,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: "CAR_OWNER",
+          address: {
+            street: formData.address,
+            city: {
+              cityName: formData.city,
+              country: formData.country
+            },
+          }
+        }).then((success) => {
+          if (success) {
+            alert("Car Owner registered successfully!");
+            window.location.href = '/login'; // Redirect to login page
+          } else {
+            alert("Registration failed. Please try again.");
+            window.location.reload(); // Reload the page to reset the form
+          }
+        }).catch((error) => {
+          console.error("Error during registration:", error);
+          alert("An error occurred. Please try again later.");
+          window.location.reload(); // Reload the page to reset the form
+        });
+     
+      }
+      else {
+        const success = createShopOwner({
+          username: formData.username,
+          email: formData.email,
+          phoneNumber: formData.phone_number,
+          password: formData.password,
+          shopName: formData.shop_name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          shopPhoneNumber: formData.shop_number,
+          role: "SHOP_OWNER",
+          address: {
+            street: formData.address,
+            city: {
+              cityName: formData.city,
+              country: formData.country
+            },
+          }
+        }).then((success) => {
+          if (success) {
+            alert("Shop Owner registered successfully!");
+            window.location.href = '/login'; // Redirect to login page
+          } else {
+            alert("Registration failed. Please try again.");
+            window.location.reload(); // Reload the page to reset the form
+          }
+        }).catch((error) => {
+          console.error("Error during registration:", error);
+          alert("An error occurred. Please try again later.");
+          window.location.reload(); // Reload the page to reset the form
+        });
+      }
     }
   };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -393,41 +473,40 @@ useEffect(() => {
 
             {step === 2 && (
               <div className="mb-6">
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-4">
-                    {userType === 'carOwner' && (
-                      <div className="space-y-4">
-                        <div>
-                          <label htmlFor="firstName" className="text-gray-500">First Name</label>
-                          <input
-                            type="text"
-                            id="firstName"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
-                            placeholder="First Name"
-                          />
-                          {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
-                        </div>
+                <form onSubmit={handleSubmit}> 
+                  <div>
+                    <label htmlFor="firstName" className="text-gray-500">First Name</label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
+                      placeholder="First Name"
+                    />
+                    {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName}</p>}
+                  </div>
 
-                        <div>
-                          <label htmlFor="lastName" className="text-gray-500">Last Name</label>
-                          <input
-                            type="text"
-                            id="lastName"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
-                            placeholder="Last Name"
-                          />
-                          {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
-                        </div>
-                      </div>
-                    )}
+                  <div>
+                    <label htmlFor="lastName" className="text-gray-500">Last Name</label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
+                      placeholder="Last Name"
+                    />
+                    {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName}</p>}
+                  </div>
+                    
 
-                    {userType === 'shopOwner' && (
+                  {userType === 'shopOwner' && (
+                    <div>
+                      <div style={{margin: "15px"}}></div>
+
                       <div>
                         <label htmlFor="shop_name" className="text-gray-500">Shop Name</label>
                         <input
@@ -441,21 +520,63 @@ useEffect(() => {
                         />
                         {errors.shop_name && <p className="text-red-500 text-sm">{errors.shop_name}</p>}
                       </div>
-                    )}
+                      
+                      <div>
+                        <label htmlFor="shop_number" className="text-gray-500">Shop Number</label>
+                        <input
+                          type="text"
+                          id="shop_number"
+                          name="shop_number"
+                            value={formData.shop_number}
+                            onChange={handleChange}
+                            className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
+                            placeholder="Shop Number"
+                          />
+                          {errors.shop_number && <p className="text-red-500 text-sm">{errors.shop_number}</p>}
+                        </div>
+                      </div>
+                  )}
+                  
+                  <div style={{margin: "15px"}}></div>
+                    
+                  <div>
+                    <label htmlFor="address" className="text-gray-500">Street</label>
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
+                      placeholder="Street Address"
+                    />
+                    {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
+                  </div>
+        
+                  <div>
+                    <label htmlFor="city" className="text-gray-500">City</label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
+                      placeholder="City"
+                    />
+                  </div>
 
-                    <div>
-                      <label htmlFor="address" className="text-gray-500">Address</label>
-                      <input
-                        type="text"
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
-                        placeholder="Address"
-                      />
-                      {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
-                    </div>
+                  <div>
+                    <label htmlFor="country" className="text-gray-500">Country</label>
+                    <input
+                      type="text"
+                      id="country"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleChange}
+                      className="mt-1 w-full p-2 bg-gray-800 border-2 border-gray-600 rounded-lg text-white"
+                      placeholder="Country"
+                    />
                   </div>
 
                   <div className="mt-6">
@@ -497,5 +618,55 @@ useEffect(() => {
     </motion.div>
   );
 };
+
+async function createShopOwner(data) {
+  try {
+    const response = await fetch('http://127.0.0.1:8080/shopowner/register', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    // Try to get detailed error message if available
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error("Server error:", errorData || response.statusText);
+      return false;
+    }
+
+    return true;
+
+  } catch (error) {
+    console.error("Network error during registration:", error);
+    throw error; // Re-throw to handle in the component
+  }
+}
+
+async function createCarOwner(data) {
+  try {
+    const response = await fetch('http://127.0.0.1:8080/carowner/register', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    // Try to get detailed error message if available
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error("Server error:", errorData || response.statusText);
+      return false;
+    }
+    
+    return true;
+  
+  } catch (error) {
+  console.error("Network error during registration:", error);
+  throw error; // Re-throw to handle in the component
+  }
+}
 
 export default SignUp;
