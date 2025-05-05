@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Car, Store } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { nav } from 'framer-motion/client';
+import { useNavigate } from 'react-router-dom';
 
 const pageVariants = {
   initial: {
@@ -45,6 +47,8 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [step, setStep] = useState(1);
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -103,6 +107,62 @@ const SignUp = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  async function createShopOwner(data) {
+    try {
+      const response = await fetch('http://127.0.0.1:8080/shopowner/register', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+  
+      // Try to get detailed error message if available
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Server error:", errorData || response.statusText);
+        window.location.reload(); // Reload the page to reset the form
+        setErrors({ server: errorData?.message || "Registration failed" });
+        return;
+      }
+  
+      navigate('/login'); // Redirect to login page
+  
+    } catch (error) {
+      console.error("Network error during registration:", error);
+      setErrors({ server: "Network error. Please try again." });
+      window.location.reload(); // Reload the page to reset the form
+    }
+  }
+  
+  async function createCarOwner(data) {
+    try {
+      const response = await fetch('http://127.0.0.1:8080/carowner/register', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+  
+      // Try to get detailed error message if available
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Server error:", errorData || response.statusText);
+        window.location.reload(); // Reload the page to reset the form
+        setErrors({ server: errorData?.message || "Registration failed" });
+        return;
+      }
+      
+      navigate('/login'); // Redirect to login page
+    
+    } catch (error) {
+      console.error("Network error during registration:", error);
+      window.location.reload(); // Reload the page to reset the form
+      setErrors({ server: "Network error. Please try again." });
+    }
+  }
 
   const validateStep2 = () => {
     const newErrors = {};
@@ -178,18 +238,6 @@ const SignUp = () => {
               country: formData.country
             },
           }
-        }).then((success) => {
-          if (success) {
-            alert("Car Owner registered successfully!");
-            window.location.href = '/login'; // Redirect to login page
-          } else {
-            alert("Registration failed. Please try again.");
-            window.location.reload(); // Reload the page to reset the form
-          }
-        }).catch((error) => {
-          console.error("Error during registration:", error);
-          alert("An error occurred. Please try again later.");
-          window.location.reload(); // Reload the page to reset the form
         });
      
       }
@@ -211,18 +259,6 @@ const SignUp = () => {
               country: formData.country
             },
           }
-        }).then((success) => {
-          if (success) {
-            alert("Shop Owner registered successfully!");
-            window.location.href = '/login'; // Redirect to login page
-          } else {
-            alert("Registration failed. Please try again.");
-            window.location.reload(); // Reload the page to reset the form
-          }
-        }).catch((error) => {
-          console.error("Error during registration:", error);
-          alert("An error occurred. Please try again later.");
-          window.location.reload(); // Reload the page to reset the form
         });
       }
     }
@@ -618,55 +654,5 @@ useEffect(() => {
     </motion.div>
   );
 };
-
-async function createShopOwner(data) {
-  try {
-    const response = await fetch('http://127.0.0.1:8080/shopowner/register', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    // Try to get detailed error message if available
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error("Server error:", errorData || response.statusText);
-      return false;
-    }
-
-    return true;
-
-  } catch (error) {
-    console.error("Network error during registration:", error);
-    throw error; // Re-throw to handle in the component
-  }
-}
-
-async function createCarOwner(data) {
-  try {
-    const response = await fetch('http://127.0.0.1:8080/carowner/register', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    // Try to get detailed error message if available
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error("Server error:", errorData || response.statusText);
-      return false;
-    }
-    
-    return true;
-  
-  } catch (error) {
-  console.error("Network error during registration:", error);
-  throw error; // Re-throw to handle in the component
-  }
-}
 
 export default SignUp;

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Car, Store } from 'lucide-react';
+import { nav } from 'framer-motion/client';
+import { useNavigate } from 'react-router-dom';
 
 const pageVariants = {
   initial: {
@@ -32,6 +34,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [userType, setUserType] = useState('carOwner'); 
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,6 +52,64 @@ const Login = () => {
       });
     }
   };
+
+  async function loginShopOwner (email, password) {
+    try {
+      const response = await fetch('http://127.0.0.1:8080/shopowner/login', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+  
+      // Try to get detailed error message if available
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Server error:", errorData || response.statusText);
+        setErrors({ ...errors, password: "Invalid email or password" });
+        return; // Exit if there's an error
+      }
+  
+      const data = await response.json();
+      window.localStorage.setItem("userType", "shopOwner");
+      window.localStorage.setItem('login', true);
+      navigate("/shop", { state: { data } });
+  
+    } catch (error) {
+      console.error("Network error during registration:", error);
+      setErrors({ ...errors, password: "Invalid email or password" });
+    }
+  }
+  
+  async function loginCarOwner (email, password) {
+    try {
+      const response = await fetch('http://127.0.1:8080/carowner/login', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+  
+      // Try to get detailed error message if available
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Server error:", errorData || response.statusText);
+        setErrors({ ...errors, password: "Invalid email or password" });
+        return; // Exit if there's an error
+      }
+  
+      const data = await response.json();
+      window.localStorage.setItem("userType", "carOwner");
+      window.localStorage.setItem('login', true);
+      navigate("/shop", { state: { data } });
+  
+    } catch (error) {
+      console.error("Network error during registration:", error);
+      setErrors({ ...errors, password: "Invalid email or password" });
+    }
+  }
 
   const validateForm = () => {
     const newErrors = {};
@@ -70,13 +133,18 @@ const Login = () => {
     if (validateForm()) {
       setIsLoading(true);
       // Simulate API call
-      setTimeout(() => {
-        console.log("Login form submitted:", formData);
-        setIsLoading(false);
-        // Redirect or handle login success
-      }, 1500);
-    }
-  };
+      if (userType === 'carOwner') {
+        loginCarOwner(formData.email, formData.password).finally(() => {
+          setIsLoading(false);
+        });
+      }
+      else if (userType === 'shopOwner') {
+        loginShopOwner(formData.email, formData.password).finally(() => {
+          setIsLoading(false);
+        });
+      }
+    };
+}
 
   return (
     <motion.div
@@ -153,6 +221,36 @@ const Login = () => {
               <h3 className="text-xl font-bold text-blue-400">Welcome Back</h3>
               <p className="text-gray-400 mt-1">Sign in to your account</p>
             </div>
+
+            <div className="flex justify-center space-x-4 mb-6">
+                  <div
+                    className={`flex flex-col items-center p-4 rounded-lg cursor-pointer transition-all duration-300 ${userType === 'carOwner'
+                      ? 'bg-blue-600 bg-opacity-30 border-2 border-blue-500 transform scale-105'
+                      : 'bg-gray-800 bg-opacity-40 border-2 border-gray-700 hover:bg-gray-700'
+                      }`}
+                    onClick={() => setUserType('carOwner')}
+                  >
+                    <Car
+                      size={32}
+                      className={`mb-2 ${userType === 'carOwner' ? 'text-blue-400' : 'text-gray-400'}`}
+                    />
+                    <span className="text-white font-medium">Car Owner</span>
+                  </div>
+
+                  <div
+                    className={`flex flex-col items-center p-4 rounded-lg cursor-pointer transition-all duration-300 ${userType === 'shopOwner'
+                      ? 'bg-purple-600 bg-opacity-30 border-2 border-purple-500 transform scale-105'
+                      : 'bg-gray-800 bg-opacity-40 border-2 border-gray-700 hover:bg-gray-700'
+                      }`}
+                    onClick={() => setUserType('shopOwner')}
+                  >
+                    <Store
+                      size={32}
+                      className={`mb-2 ${userType === 'shopOwner' ? 'text-purple-400' : 'text-gray-400'}`}
+                    />
+                    <span className="text-white font-medium">Shop Owner</span>
+                  </div>
+                </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
