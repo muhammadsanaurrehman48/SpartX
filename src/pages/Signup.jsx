@@ -110,11 +110,12 @@ const SignUp = () => {
 
   async function createShopOwner(data) {
     try {
-      const response = await fetch('http://127.0.0.1:8080/shopowner/register', {
+      const response = await fetch('http://localhost:8080/shopowner/register', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(data),
       });
   
@@ -138,11 +139,12 @@ const SignUp = () => {
   
   async function createCarOwner(data) {
     try {
-      const response = await fetch('http://127.0.0.1:8080/carowner/register', {
+      const response = await fetch('http://localhost:8080/carowner/register', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        creadentials: "include",
         body: JSON.stringify(data),
       });
   

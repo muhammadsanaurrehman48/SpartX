@@ -2,10 +2,46 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
+async function carOwnerLogout() {
+  const response = await fetch('http://localhost:8080/carowner/logout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+  if (response.ok) {
+    console.log('Logged out successfully');
+    window.localStorage.removeItem('login');
+    window.localStorage.removeItem('userType');
+    window.location.reload(); // Refresh to update UI
+  } else {
+    console.error('Failed to log out');
+  }
+}
+
+async function shopOwnerLogout() {
+  const response = await fetch('http://localhost:8080/shopowner/logout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+  if (response.ok) {
+    window.localStorage.removeItem('login');
+    window.localStorage.removeItem('userType');
+    window.location.reload(); // Refresh to update UI
+  } else {
+    console.error('Failed to log out');
+  }
+}
+
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hoveredLink, setHoveredLink] = useState(null);
+  const isloggedIn = window.localStorage.getItem('login');
 
   // Add scroll event listener to create navbar animation on scroll
   useEffect(() => {
@@ -71,18 +107,56 @@ export const Navbar = () => {
           </div>
           
           <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+            {isloggedIn === 'true' ? (
+            <Link
+              to="/profile"
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-700 text-white p-2 rounded-md shadow hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center"
+              title="Profile"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+                />
+              </svg>
+            </Link>
+            ) : (
             <Link
               to="/login"
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
             >
               Login
             </Link>
-            <Link
+            )}
+            {isloggedIn === 'true' ? (
+              <button
+              onClick={() => {
+                const userType = window.localStorage.getItem('userType');
+                if (userType === 'carOwner') {
+                  carOwnerLogout();
+                } else if (userType === 'shopOwner') {
+                  shopOwnerLogout();
+                }
+              }}
+              className="bg-gradient-to-r from-pink-500 to-red-500 hover:bg-gradient-to-r hover:from-pink-600 hover:to-red-600 text-white px-4 py-2 rounded-md text-sm font-medium shadow hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
+            >
+              Log Out
+            </button>) :
+            (<Link
               to="/signup"
               className="bg-gradient-to-r from-pink-500 to-red-500 hover:bg-gradient-to-r hover:from-pink-600 hover:to-red-600 text-white px-4 py-2 rounded-md text-sm font-medium shadow hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
             >
               Sign Up
             </Link>
+            )}
           </div>
 
           <div className="-mr-2 flex items-center sm:hidden">
@@ -128,18 +202,56 @@ export const Navbar = () => {
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200">
           <div className="flex items-center px-4 space-x-3">
+            {isloggedIn === 'true' ? (
+            <Link
+              to="/profile"
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-700 text-white p-2 rounded-md shadow hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center"
+              title="Profile"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+                />
+              </svg>
+            </Link>
+            ) : (
             <Link 
               to="/login" 
               className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
             >
               Login
             </Link>
-            <Link 
+            )}
+            {isloggedIn === 'true' ? (
+              <button
+              onClick={() => {
+                const userType = window.localStorage.getItem('userType');
+                if (userType === 'carOwner') {
+                  carOwnerLogout();
+                } else if (userType === 'shopOwner') {
+                  shopOwnerLogout();
+                }
+              }}
+              className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-3 py-2 rounded-md text-sm font-medium shadow transform hover:scale-105 transition-all duration-200"
+            >
+              Log Out
+            </button>
+            ) : (<Link 
               to="/signup" 
               className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-3 py-2 rounded-md text-sm font-medium shadow transform hover:scale-105 transition-all duration-200"
             >
               Sign Up
             </Link>
+            )}
           </div>
         </div>
       </div>

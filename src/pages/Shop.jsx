@@ -125,7 +125,6 @@ const sampleProducts = [
   }
 ];
 
-// Product Card Component
 const ProductCard = ({ product, onClick }) => {
   return (
     <div 
