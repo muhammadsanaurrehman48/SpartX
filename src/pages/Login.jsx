@@ -55,11 +55,12 @@ const Login = () => {
 
   async function loginShopOwner (email, password) {
     try {
-      const response = await fetch('http://127.0.0.1:8080/shopowner/login', {
+      const response = await fetch('http://localhost:8080/shopowner/login', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
   
@@ -84,11 +85,12 @@ const Login = () => {
   
   async function loginCarOwner (email, password) {
     try {
-      const response = await fetch('http://127.0.1:8080/carowner/login', {
+      const response = await fetch('http://localhost:8080/carowner/login', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
   
