@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { 
   User, 
   MapPin, 
@@ -14,9 +14,13 @@ import {
   Settings, 
   LogOut 
 } from 'lucide-react';
+import { Navbar } from '../components/common/Navbar';
+import {Footer} from '../components/common/Footer';
+import { useNavigate } from 'react-router-dom';
 
 // Demo user data
-const userData = {
+
+const userDataDemo = {
   firstName: "Michael",
   lastName: "Johnson",
   email: "michael.johnson@example.com",
@@ -52,7 +56,7 @@ async function carOwnerLogout() {
     console.log('Logged out successfully');
     window.localStorage.removeItem('login');
     window.localStorage.removeItem('userType');
-    window.location.reload();
+    window.location.href = '/';
   } else {
     console.error('Failed to log out');
   }
@@ -69,9 +73,30 @@ async function shopOwnerLogout() {
   if (response.ok) {
     window.localStorage.removeItem('login');
     window.localStorage.removeItem('userType');
-    window.location.reload();
+    window.location.href = '/';
   } else {
     console.error('Failed to log out');
+  }
+}
+
+async function fetchUserData(isCarOwner) {
+  let endpoint = isCarOwner ? 'carowner' : 'shopowner';
+  try {
+    const response = await fetch(`http://localhost:8080/${endpoint}/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return null;
   }
 }
 
@@ -80,6 +105,41 @@ export default function ProfilePage() {
   const [greetingMessage, setGreetingMessage] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const isLoggedIn = window.localStorage.getItem('login') === 'true';
+  const [userData, setUserData] = useState(userDataDemo); // Default to demo data
+
+  const navigate = useNavigate();
+
+  const fetchUserDataFromServer = async () => {
+    const userType = window.localStorage.getItem('userType');
+    if (userType === 'carOwner') {
+      const data = await fetchUserData(true);
+ 
+      // For debugging the fetched data
+      console.log(data);
+      setUserData({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        avatar: "/api/placeholder/150/150",
+        address: {
+          street: data.address.street,
+          city: data.address.city.cityName,
+          state: data.address.city.country.countryName,
+        },
+        orders: data.orders || [], // Use fetched orders or fallback to demo data
+        maintenanceReminders: data.car.maintenanceReminders || [], // Use fetched maintenance reminders or fallback to demo data
+        cartItems: data.cart == null ? 0 : data.cart.length,
+        cars: data.car || [], // Use fetched cars or fallback to empty array
+      })
+    } else if (userType === 'shopOwner') {
+      const data = await fetchUserData(false);
+      setUserData(data || userData); // Fallback to demo data if fetch fails
+    }
+  }
+
+  useEffect(() => {
+    fetchUserDataFromServer();
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -141,33 +201,7 @@ export default function ProfilePage() {
       </style>
 
       {/* Top navigation */}
-      <div className="bg-blue-900 text-white py-4 px-6 flex justify-between items-center shadow-lg">
-        <div className="flex items-center space-x-2">
-          <Car className="h-8 w-8 transform hover:scale-110 transition-transform duration-300" />
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">SPART-X</h1>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <ShoppingCart className="h-6 w-6 transform hover:rotate-12 transition-transform duration-300" />
-            {userData.cartItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {userData.cartItems}
-              </span>
-            )}
-          </div>
-          <div className="relative">
-            <Bell className="h-6 w-6 transform hover:rotate-12 transition-transform duration-300" />
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              9+
-            </span>
-          </div>
-          <img
-            src={userData.avatar}
-            alt="Profile"
-            className="h-8 w-8 rounded-full border-2 border-white transform hover:scale-110 transition-transform duration-300"
-          />
-        </div>
-      </div>
+      <Navbar />
 
       {/* Main content */}
       <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
@@ -249,7 +283,7 @@ export default function ProfilePage() {
                   <div className="flex items-start">
                     <MapPin className="h-4 w-4 text-gray-400 mt-1 mr-1 flex-shrink-0 transform hover:scale-110 transition-transform duration-300" />
                     <p className="font-medium">
-                      {userData.address.street}, {userData.address.city}, {userData.address.state} {userData.address.zip}
+                      {userData.address.street}, {userData.address.city}, {userData.address.state} 
                     </p>
                   </div>
                 </div>
@@ -265,15 +299,26 @@ export default function ProfilePage() {
                 </h3>
                 <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">Add Vehicle</button>
               </div>
-              <div className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">2022 Tesla Model 3</h4>
-                    <p className="text-sm text-gray-500">Standard Range Plus</p>
+              {userData.cars && userData.cars.length > 0 ? (
+                userData.cars.map(car => (
+                  <div key={car.carId} className="border rounded-lg p-4 mb-4 bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-medium">{car.year} {car.model}</h4>
+                        <p className="text-sm text-gray-500">{car.name}</p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 transform hover:translate-x-1 transition-transform duration-300" />
+                    </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400 transform hover:translate-x-1 transition-transform duration-300" />
-                </div>
-              </div>
+                ))
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500">No vehicles added yet</p>
+                    <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300">
+                      Add Vehicle
+                    </button>
+                  </div>
+                )}
             </div>
           </div>
 
@@ -291,23 +336,32 @@ export default function ProfilePage() {
                     <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">View All</button>
                   </div>
                   <div className="space-y-4">
-                    {userData.maintenanceReminders.map(item => (
-                      <div
-                        key={item.id}
-                        className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg hover:bg-blue-100 transition transform hover:-translate-y-1 duration-300"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium">{item.service}</h4>
-                            <p className="text-sm text-gray-600">{item.vehicle}</p>
-                          </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-500 mr-1 transform hover:scale-110 transition-transform duration-300" />
-                            <span className="text-sm text-gray-500">{item.dueDate}</span>
+                    {userData.maintenanceReminders.length > 0 ? (
+                      userData.maintenanceReminders.map(item => (
+                        <div
+                          key={item.id}
+                          className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg hover:bg-blue-100 transition transform hover:-translate-y-1 duration-300"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{item.service}</h4>
+                              <p className="text-sm text-gray-600">{item.vehicle}</p>
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 text-gray-500 mr-1 transform hover:scale-110 transition-transform duration-300" />
+                              <span className="text-sm text-gray-500">{item.dueDate}</span>
+                            </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-gray-500">No upcoming maintenance reminders</p>
+                        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300">
+                          Add Reminder
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>
@@ -323,22 +377,31 @@ export default function ProfilePage() {
                     <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">View All</button>
                   </div>
                   <div className="space-y-4">
-                    {userData.orders.slice(0, 2).map(order => (
-                      <div
-                        key={order.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer transform hover:-translate-y-1 duration-300"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-blue-600">{order.id}</span>
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{order.status}</span>
-                        </div>
-                        <p className="text-sm text-gray-500 mb-2">{order.date}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">{order.items}</span>
-                          <span className="font-medium">{order.amount}</span>
-                        </div>
+                    {userData.orders.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-gray-500">No recent orders</p>
+                        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300" onClick={() => { navigate('/shop') }}>
+                          Shop Now
+                        </button>
                       </div>
-                    ))}
+                    ) : (
+                      userData.orders.slice(0, 2).map(order => (
+                        <div
+                          key={order.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer transform hover:-translate-y-1 duration-300"
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium text-blue-600">{order.id}</span>
+                            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{order.status}</span>
+                          </div>
+                          <p className="text-sm text-gray-500 mb-2">{order.date}</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">{order.items}</span>
+                            <span className="font-medium">{order.amount}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -377,26 +440,35 @@ export default function ProfilePage() {
                 Order History
               </h3>
               <div className="space-y-4">
-                {userData.orders.map(order => (
-                  <div
-                    key={order.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer transform hover:-translate-y-1 duration-300"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-blue-600">{order.id}</span>
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{order.status}</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-2">{order.date}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{order.items}</span>
-                      <span className="font-medium">{order.amount}</span>
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                      <button className="text-blue-500 hover:text-blue-600 text-sm mr-4 transform hover:-translate-y-1 transition-transform duration-300">Track Order</button>
-                      <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">View Details</button>
-                    </div>
+                {userData.orders.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500">No orders found</p>
+                    <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300" onClick={() => { navigate('/shop') }}>
+                      Shop Now
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  userData.orders.map(order => (
+                    <div
+                      key={order.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer transform hover:-translate-y-1 duration-300"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-blue-600">{order.id}</span>
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{order.status}</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-2">{order.date}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">{order.items}</span>
+                        <span className="font-medium">{order.amount}</span>
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        <button className="text-blue-500 hover:text-blue-600 text-sm mr-4 transform hover:-translate-y-1 transition-transform duration-300">Track Order</button>
+                        <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">View Details</button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -442,6 +514,10 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
+
     </div>
   );
 }
