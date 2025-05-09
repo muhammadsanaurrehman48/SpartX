@@ -75,7 +75,7 @@ const Login = () => {
       const data = await response.json();
       window.localStorage.setItem("userType", "shopOwner");
       window.localStorage.setItem('login', true);
-      navigate("/shop", { state: { data } });
+      navigate("/profile", { state: { data } });
   
     } catch (error) {
       console.error("Network error during registration:", error);
@@ -105,7 +105,7 @@ const Login = () => {
       const data = await response.json();
       window.localStorage.setItem("userType", "carOwner");
       window.localStorage.setItem('login', true);
-      navigate("/shop", { state: { data } });
+      navigate("/profile", { state: { data } });
   
     } catch (error) {
       console.error("Network error during registration:", error);

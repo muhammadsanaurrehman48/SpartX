@@ -14,7 +14,7 @@ async function carOwnerLogout() {
     console.log('Logged out successfully');
     window.localStorage.removeItem('login');
     window.localStorage.removeItem('userType');
-    window.location.reload();
+    window.location.href = '/';
   } else {
     console.error('Failed to log out');
   }
@@ -31,7 +31,7 @@ async function shopOwnerLogout() {
   if (response.ok) {
     window.localStorage.removeItem('login');
     window.localStorage.removeItem('userType');
-    window.location.reload();
+    window.location.href = '/';
   } else {
     console.error('Failed to log out');
   }
