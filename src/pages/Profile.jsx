@@ -13,13 +13,17 @@ import {
   Calendar, 
   Settings,
   Store, 
-  LogOut
+  LogOut,
+  Plus,
+  Trash2,
+  Tag
 } from 'lucide-react';
 import { Navbar } from '../components/common/Navbar';
-import EditProfileModal from '../components/common/EditProfileModal';
+import EditProfileModal from '../components/profile/EditProfileModal';
 import { Footer } from '../components/common/Footer';
 import { useNavigate } from 'react-router-dom';
 import { address } from 'framer-motion/client';
+import AddShopItemModal from '../components/profile/AddShopItemModal';
 
 // Demo user data
 
@@ -106,15 +110,37 @@ async function fetchUserData(isCarOwner) {
   }
 }
 
+async function fetchShopProducts() {
+  try {
+    const response = await fetch('http://localhost:8080/products/shopowner', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching shop products:', error);
+    return null;
+  }
+}
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [activeTabShopOwner, setActiveTabShopOwner] = useState('profile');
   const [greetingMessage, setGreetingMessage] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const isLoggedIn = window.localStorage.getItem('login') === 'true';
   const [userData, setUserData] = useState(userDataDemo); // Default to demo data
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editType, setEditType] = useState('personal');
+  const [shopProducts, setShopProducts] = useState({});
 
   const navigate = useNavigate();
 
@@ -278,6 +304,9 @@ export default function ProfilePage() {
       // For debugging the fetched data
       // console.log(data);
       setUserData(data); // Fallback to demo data if fetch fails
+      const shopProductsData = await fetchShopProducts();
+      setShopProducts(shopProductsData);
+      console.log(shopProductsData);
     }
   }
 
@@ -755,87 +784,176 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Add tab navigation */}
+          <div className="flex border-b border-gray-200 mb-6">
+            {['profile', 'shop-items'].map((tab) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 font-medium transform transition-all duration-300 ${
+                  activeTabShopOwner === tab
+                    ? 'text-purple-600 border-b-2 border-purple-500'
+                    : 'text-gray-500 hover:text-gray-700 hover:-translate-y-1'
+                }`}
+                onClick={() => setActiveTabShopOwner(tab)}
+              >
+                {tab === 'profile' ? 'Profile' : 'Shop Items'}
+              </button>
+            ))}
+          </div>
   
           {/* Two-card layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Card 1: Personal Information */}
-            <div className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} transform transition-all duration-500 delay-100`}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold flex items-center">
-                  <User className="h-6 w-6 mr-3 text-purple-500 transform hover:rotate-12 transition-transform duration-300" />
-                  Personal Information
-                </h3>
-                <button className="text-purple-500 hover:text-purple-600 text-sm transform hover:-translate-y-1 transition-transform duration-300" onClick={() => openEditModal('personal')}>Edit</button>
+          {activeTabShopOwner === 'profile' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 1: Personal Information */}
+              <div className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} transform transition-all duration-500 delay-100`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold flex items-center">
+                    <User className="h-6 w-6 mr-3 text-purple-500 transform hover:rotate-12 transition-transform duration-300" />
+                    Personal Information
+                  </h3>
+                  <button className="text-purple-500 hover:text-purple-600 text-sm transform hover:-translate-y-1 transition-transform duration-300" onClick={() => openEditModal('personal')}>Edit</button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Full name</p>
+                    <p className="font-medium text-lg">{userData.firstName} {userData.lastName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="font-medium text-lg">{userData.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Phone</p>
+                    <p className="font-medium text-lg">{userData.phoneNumber || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Role</p>
+                    <p className="font-medium text-lg bg-purple-100 text-purple-700 inline-block px-3 py-1 rounded-full">Shop Owner</p>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-500">Full name</p>
-                  <p className="font-medium text-lg">{userData.firstName} {userData.lastName}</p>
+    
+              {/* Card 2: Shop Information */}
+              <div className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} transform transition-all duration-500 delay-200`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold flex items-center">
+                    <Store className="h-6 w-6 mr-3 text-purple-500 transform hover:rotate-12 transition-transform duration-300" />
+                    Shop Information
+                  </h3>
+                  <button className="text-purple-500 hover:text-purple-600 text-sm transform hover:-translate-y-1 transition-transform duration-300" onClick={
+                    () => openEditModal('shop')
+                  }>Edit</button>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium text-lg">{userData.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Phone</p>
-                  <p className="font-medium text-lg">{userData.phoneNumber || "Not provided"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Role</p>
-                  <p className="font-medium text-lg bg-purple-100 text-purple-700 inline-block px-3 py-1 rounded-full">Shop Owner</p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Shop name</p>
+                    <p className="font-medium text-lg">{userData.shopName || "Your Auto Shop"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Shop number</p>
+                    <p className="font-medium text-lg">{userData.shopPhoneNumber || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Address</p>
+                    <div className="flex items-start">
+                      <MapPin className="h-5 w-5 text-purple-400 mt-1 mr-2 flex-shrink-0 transform hover:scale-110 transition-transform duration-300" />
+                      <p className="font-medium text-lg">
+                        {userData.address?.street || "123 Shop Street"}, 
+                        {" " + userData.address?.city?.cityName || "Mechanic City"}, 
+                        {" " + userData.address?.city?.country?.countryName || "Auto Country"}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Operating hours</p>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-600 block">Weekdays</span>
+                        <span className="font-medium">9:00 AM - 6:00 PM</span>
+                      </div>
+                      <div className="bg-gray-50 p-2 rounded">
+                        <span className="text-gray-600 block">Weekend</span>
+                        <span className="font-medium">10:00 AM - 4:00 PM</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          )}
+          {/* Card 3: Shop Items */}
+          {activeTabShopOwner === 'shop-items' && (
+            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold flex items-center">
+                  <Package className="h-6 w-6 mr-3 text-purple-500 transform hover:rotate-12 transition-transform duration-300" />
+                  Shop Items
+                </h3>
+                <button 
+                  onClick={() => setIsAddItemModalOpen(true)} 
+                  className="flex items-center justify-center h-8 w-8 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors transform hover:scale-110 duration-300"
+                  title="Add new item"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                {shopProducts !== null && shopProducts.length > 0 ? (
+                  shopProducts.map(item => (
+                    <div key={item.productId} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition cursor-pointer transform hover:-translate-y-1 duration-300">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-purple-600">{item.productName}</span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation(); 
+                            // Add confirmation dialog
+                            if(window.confirm('Are you sure you want to delete this item?')) {
+                              deleteShopItem(item.productId);
+                              // Optionally, refresh the shop items list or update state
+                              setShopProducts(prev => prev.filter(i => i.productId !== item.productId));
+                              console.log('Delete item:', item.productId);
+                            }
+                          }} 
+                          className="flex items-center justify-center h-7 w-7 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors transform hover:scale-110 duration-300"
+                          title="Delete item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      
+                      {/* Category badge */}
+                      <div className="flex items-center mb-2">
+                        <Tag className="h-3 w-3 text-purple-400 mr-1" />
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          {item.category || "Uncategorized"}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-gray-500 mb-2">{item.description}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Rs {item.price}</span>
+                        <span className={`font-medium text-sm px-2 py-1 rounded-full ${
+                          item.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                        {item.stock > 0 ? `In Stock (${item.stock})` : 'Out of Stock'}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500">No shop items available</p>
+                    <button className="mt-4 bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition transform hover:-translate-y-1 duration-300" onClick={() => {setIsAddItemModalOpen(true)}}>
+                      Add Item
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
   
-            {/* Card 2: Shop Information */}
-            <div className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} transform transition-all duration-500 delay-200`}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold flex items-center">
-                  <Store className="h-6 w-6 mr-3 text-purple-500 transform hover:rotate-12 transition-transform duration-300" />
-                  Shop Information
-                </h3>
-                <button className="text-purple-500 hover:text-purple-600 text-sm transform hover:-translate-y-1 transition-transform duration-300" onClick={
-                  () => openEditModal('shop')
-                }>Edit</button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-500">Shop name</p>
-                  <p className="font-medium text-lg">{userData.shopName || "Your Auto Shop"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Shop number</p>
-                  <p className="font-medium text-lg">{userData.shopPhoneNumber || "Not provided"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Address</p>
-                  <div className="flex items-start">
-                    <MapPin className="h-5 w-5 text-purple-400 mt-1 mr-2 flex-shrink-0 transform hover:scale-110 transition-transform duration-300" />
-                    <p className="font-medium text-lg">
-                      {userData.address?.street || "123 Shop Street"}, 
-                      {" " + userData.address?.city?.cityName || "Mechanic City"}, 
-                      {" " + userData.address?.city?.country?.countryName || "Auto Country"}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Operating hours</p>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="bg-gray-50 p-2 rounded">
-                      <span className="text-gray-600 block">Weekdays</span>
-                      <span className="font-medium">9:00 AM - 6:00 PM</span>
-                    </div>
-                    <div className="bg-gray-50 p-2 rounded">
-                      <span className="text-gray-600 block">Weekend</span>
-                      <span className="font-medium">10:00 AM - 4:00 PM</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-  
         {/* Footer */}
         <Footer />
         {/* Edit Profile Modal */}
@@ -846,7 +964,30 @@ export default function ProfilePage() {
           userData={userData}
           onSave={handleSaveProfileChanges}
         />
+        {/* Add Shop Item Modal */}
+        <AddShopItemModal
+          isOpen={isAddItemModalOpen}
+          onClose={() => setIsAddItemModalOpen(false)}
+        />
       </div>
     );
+  }
+}
+
+async function deleteShopItem(itemId) {
+  try {
+    const response = await fetch(`http://localhost:8080/products/${itemId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete item');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting item:', error);
   }
 }
