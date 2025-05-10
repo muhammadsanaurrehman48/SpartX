@@ -1,5 +1,5 @@
 // src/pages/Shop.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { Search, ShoppingCart } from 'lucide-react';
 import { Navbar } from '../components/common/Navbar'; // Updated import to use named export
 import { Footer } from '../components/common/Footer'; // Updated import to use named export
@@ -124,6 +124,35 @@ const sampleProducts = [
     inStock: true
   }
 ];
+
+// Demo specifications for the product detail modal
+const specifications = {
+  'PART': ["OEM certified", "Steel construction", "Compatible with Toyota Corolla 2015-2020", "Includes mounting hardware"],
+  "FLUID": ["5W-30 synthetic", "1-liter bottle", "API SN certified", "Suitable for gasoline engines"],
+  "ACCESSORY" : ["Universal fit", "Waterproof material", "Black leather finish", "Easy to install"],
+  "TOOL": ["Chrome vanadium steel", "Includes 40 pieces", "Ergonomic handle", "Suitable for automotive repair"],
+  "SERVICE": ["Includes oil and filter change", "Takes approximately 45 minutes", "12-month service warranty", "Appointment required"]
+}
+
+async function fetchProducts() {
+  try {
+    const response = await fetch("http://localhost:8080/products/all", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+}
 
 const ProductCard = ({ product, onClick }) => {
   return (
@@ -392,6 +421,32 @@ const Shop = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cartItems, setCartItems] = useState([]);
 
+  // Fetch products from API
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await fetchProducts();
+      
+      const formattedData = data.map(product => ({
+        id: product.productId,
+        name: product.productName,
+        price: product.price,
+        category: product.category,
+        subCategory: null,
+        shop: product.shopName,
+        rating: (Math.floor(Math.random() * 5) + 1), // Random rating for demo
+        image: product.images[0] || "/api/placeholder/300/300",
+        description: product.description,
+        specifications: specifications[product.category] || [],
+        inStock: product.stock > 0 ? true : false
+      }));
+      setProducts(formattedData);
+      setFilteredProducts(formattedData);
+      setCategories([...new Set(formattedData.map(product => product.category))]);
+    };
+    
+    fetchData();
+  }, []);
+  
   // Extract unique categories and shops from products
   useEffect(() => {
     const uniqueCategories = [...new Set(products.map(product => product.category))];
