@@ -16,14 +16,16 @@ import {
   LogOut,
   Plus,
   Trash2,
-  Tag
+  Tag,
 } from 'lucide-react';
 import { Navbar } from '../components/common/Navbar';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import { Footer } from '../components/common/Footer';
 import { useNavigate } from 'react-router-dom';
-import { address } from 'framer-motion/client';
+import { address, del, main } from 'framer-motion/client';
 import AddShopItemModal from '../components/profile/AddShopItemModal';
+import AddCarModal from '../components/profile/AddCarModal';
+import AddMaintenanceReminderModal from '../components/profile/AddMaintenanceReminderModal';
 
 // Demo user data
 
@@ -130,6 +132,33 @@ async function fetchShopProducts() {
   }
 }
 
+function formattingMaintenanceReminders (cars) {
+  let maintenanceReminders = [];
+
+  cars.forEach(item => {
+    const vehicle = `${item.year} ${item.model} ${item.name}`;
+    item.maintenanceReminders.forEach(reminder => {
+      // Format the date to a more readable format
+      const reminderDate = new Date(reminder.reminderDate);
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      const formattedDate = reminderDate.toLocaleDateString('en-US', options);
+      const dueMileage = reminder.dueMileage ? `${reminder.dueMileage} km` : 'N/A';
+      // Create a formatted reminder object
+      const formattedReminder = {
+        reminderId: reminder.reminderId,
+        description: reminder.description,
+        reminderDate: formattedDate,
+        vehicle: vehicle,
+        dueMileage: dueMileage,
+      }
+
+      maintenanceReminders.push(formattedReminder);
+    })
+  })
+
+  return maintenanceReminders;
+}
+
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
@@ -141,6 +170,8 @@ export default function ProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editType, setEditType] = useState('personal');
   const [shopProducts, setShopProducts] = useState({});
+  const [isAddCarModalOpen, setIsAddCarModalOpen] = useState(false);
+  const [isAddReminderModalOpen, setIsAddReminderModalOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -272,6 +303,7 @@ export default function ProfilePage() {
     if (userType === 'carOwner') {
       const data = await fetchUserData(true);
  
+      const maintenanceReminders = formattingMaintenanceReminders(data.car);
       // For debugging the fetched data
       // console.log(data);
       setUserData({
@@ -294,10 +326,11 @@ export default function ProfilePage() {
           }
         },
         orders: data.orders || [], // Use fetched orders or fallback to demo data
-        maintenanceReminders: data.car.maintenanceReminders || [], // Use fetched maintenance reminders or fallback to demo data
+        maintenanceReminders: maintenanceReminders || [], // Use fetched maintenance reminders or fallback to demo data
         cartItems: data.cart == null ? 0 : data.cart.length,
         cars: data.car || [], // Use fetched cars or fallback to empty array
       })
+
     } else if (userType === 'shopOwner') {
       const data = await fetchUserData(false);
 
@@ -306,7 +339,6 @@ export default function ProfilePage() {
       setUserData(data); // Fallback to demo data if fetch fails
       const shopProductsData = await fetchShopProducts();
       setShopProducts(shopProductsData);
-      console.log(shopProductsData);
     }
   }
 
@@ -471,7 +503,7 @@ export default function ProfilePage() {
                     <Car className="h-5 w-5 mr-2 text-blue-500 transform hover:rotate-12 transition-transform duration-300" />
                     My Vehicles
                   </h3>
-                  <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">Add Vehicle</button>
+                  <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300" onClick={() => setIsAddCarModalOpen(true)}>Add Vehicle</button>
                 </div>
                 {userData.cars && userData.cars.length > 0 ? (
                   userData.cars.map(car => (
@@ -481,14 +513,34 @@ export default function ProfilePage() {
                           <h4 className="font-medium">{car.year} {car.model}</h4>
                           <p className="text-sm text-gray-500">{car.name}</p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400 transform hover:translate-x-1 transition-transform duration-300" />
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if(window.confirm('Are you sure you want to delete this car?')) {
+                                // Call delete API here
+                                deleteCar(car.carId);
+                                // Update cars state after deletion
+                                setUserData(prevData => ({
+                                  ...prevData,
+                                  cars: prevData.cars.filter(c => c.carId !== car.carId)
+                                }));
+                              }
+                            }}
+                            className="flex items-center justify-center h-7 w-7 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-full hover:bg-red-600 transition-colors transform hover:scale-110 duration-300"
+                            title="Delete car"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                          <ChevronRight className="h-5 w-5 text-gray-400 transform hover:translate-x-1 transition-transform duration-300" />
+                        </div>
                       </div>
                     </div>
                   ))
                   ) : (
                     <div className="text-center py-6">
                       <p className="text-gray-500">No vehicles added yet</p>
-                      <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300">
+                      <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300" onClick={() => setIsAddCarModalOpen(true)}>
                         Add Vehicle
                       </button>
                     </div>
@@ -507,7 +559,10 @@ export default function ProfilePage() {
                         <Wrench className="h-5 w-5 mr-2 text-blue-500 transform hover:rotate-90 transition-transform duration-300" />
                         Upcoming Maintenance
                       </h3>
-                      <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">View All</button>
+                      <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300"
+                      onClick={() => setActiveTab('maintenance')}
+                      >
+                        View All</button>
                     </div>
                     <div className="space-y-4">
                       {userData.maintenanceReminders.length > 0 ? (
@@ -531,7 +586,8 @@ export default function ProfilePage() {
                       ) : (
                         <div className="text-center py-6">
                           <p className="text-gray-500">No upcoming maintenance reminders</p>
-                          <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300">
+                          <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300"
+                          onClick={() => setIsAddReminderModalOpen(true)}>
                             Add Reminder
                           </button>
                         </div>
@@ -548,7 +604,10 @@ export default function ProfilePage() {
                         <Package className="h-5 w-5 mr-2 text-blue-500 transform hover:scale-110 transition-transform duration-300" />
                         Recent Orders
                       </h3>
-                      <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300">View All</button>
+                      <button className="text-blue-500 hover:text-blue-600 text-sm transform hover:-translate-y-1 transition-transform duration-300" 
+                      onClick={() => setActiveTab('orders')}
+                      >
+                        View All</button>
                     </div>
                     <div className="space-y-4">
                       {userData.orders.length === 0 ? (
@@ -597,7 +656,9 @@ export default function ProfilePage() {
                     ) : (
                       <div className="text-center py-6">
                         <p className="text-gray-500">Your cart is empty</p>
-                        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300">
+                        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition transform hover:-translate-y-1 duration-300"
+                        onClick={() => { navigate('/shop') }}
+                        >
                           Browse Products
                         </button>
                       </div>
@@ -656,7 +717,7 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   {userData.maintenanceReminders.map(item => (
                     <div
-                      key={item.id}
+                      key={item.reminderId}
                       className={`border-l-4 ${
                         item.priority === 'high' ? 'border-red-500 bg-red-50' : 
                         item.priority === 'medium' ? 'border-yellow-500 bg-yellow-50' : 
@@ -665,12 +726,35 @@ export default function ProfilePage() {
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-medium">{item.service}</h4>
+                          <h4 className="font-medium">{item.description}</h4>
                           <p className="text-sm text-gray-600">{item.vehicle}</p>
+                          <p>{item.dueMileage}</p>
                         </div>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 text-gray-500 mr-1 transform hover:scale-110 transition-transform duration-300" />
-                          <span className="text-sm text-gray-500">{item.dueDate}</span>
+                        <div className="flex flex-col items-end space-y-2">
+                          <div className="flex items-center mt-1">
+                            <Calendar className="h-4 w-4 text-gray-500 mr-1 transform hover:scale-110 transition-transform duration-300" />
+                            <span className="text-sm text-gray-500">{item.reminderDate}</span>
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if(window.confirm('Are you sure you want to delete this reminder?')) {
+                                deleteReminder(item.reminderId);
+                                
+                                // Update the UI by filtering out the deleted reminder
+                                setUserData(prevData => ({
+                                  ...prevData,
+                                  maintenanceReminders: prevData.maintenanceReminders.filter(
+                                    reminder => reminder.reminderId !== item.reminderId
+                                  )
+                                }));
+                              }
+                            }}
+                            className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-full hover:bg-red-600 transition-colors transform hover:scale-110 duration-300"
+                            title="Delete reminder"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </div>
                       </div>
                       <div className="mt-4 flex justify-end">
@@ -680,7 +764,8 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   ))}
-                  <button className="mt-2 w-full border border-blue-500 text-blue-500 rounded-md py-2 hover:bg-blue-50 transition transform hover:-translate-y-1 duration-300">
+                  <button className="mt-2 w-full border border-blue-500 text-blue-500 rounded-md py-2 hover:bg-blue-50 transition transform hover:-translate-y-1 duration-300"
+                  onClick={() => setIsAddReminderModalOpen(true)}>
                     Add Maintenance Reminder
                   </button>
                 </div>
@@ -698,6 +783,16 @@ export default function ProfilePage() {
           editType={editType}
           userData={userData}
           onSave={handleSaveProfileChanges}
+        />
+        <AddCarModal
+          isOpen={isAddCarModalOpen}
+          onClose={() => setIsAddCarModalOpen(false)}
+          onAddCar={handleAddCar}
+        />
+        <AddMaintenanceReminderModal
+          isOpen={isAddReminderModalOpen}
+          onClose={() => setIsAddReminderModalOpen(false)}
+          userCars={userData.cars || []}
         />
       </div>
     );
@@ -989,5 +1084,41 @@ async function deleteShopItem(itemId) {
     return await response.json();
   } catch (error) {
     console.error('Error deleting item:', error);
+  }
+}
+
+async function deleteCar(carId) {
+  try {
+    const response = await fetch(`http://localhost:8080/cars/${carId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete car');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting car:', error);
+  }
+}
+
+async function deleteReminder(reminderId) {
+  try {
+    const response = await fetch(`http://localhost:8080/maintenance/${reminderId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete reminder');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting reminder:', error);
   }
 }
