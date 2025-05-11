@@ -144,8 +144,7 @@ export default function AddShopItemModal({ isOpen, onClose }) {
       }
       
       const data = await response.json();
-      
-      
+    
       // Close the modal
       onClose();
       
