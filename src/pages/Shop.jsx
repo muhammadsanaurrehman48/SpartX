@@ -3,7 +3,7 @@ import React, { useState, useEffect, use } from 'react';
 import { Search, ShoppingCart } from 'lucide-react';
 import { Navbar } from '../components/common/Navbar'; // Updated import to use named export
 import { Footer } from '../components/common/Footer'; // Updated import to use named export
-
+import AnimatedBackground from '../components/common/AnimatedBackground';
 // Sample auto parts data (replace with your actual data/API)
 const sampleProducts = [
   {
@@ -541,7 +541,7 @@ const Shop = () => {
     <div className="min-h-screen flex flex-col">
       {/* Navbar component */}
       <Navbar />
-      
+      <AnimatedBackground/>
       <main className="flex-grow container mx-auto px-4 py-8">
         {/* Page header */}
         <div className="mb-8">

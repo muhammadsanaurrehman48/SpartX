@@ -1,12 +1,13 @@
 // src/pages/Home.jsx
 import { motion } from 'framer-motion';
 import { Navbar } from '../components/common/Navbar';
-import {Footer} from '../components/common/Footer';
+import { Footer } from '../components/common/Footer';
 import { Hero } from '../components/home/Hero';
 import { Features } from '../components/home/Features';
 import { HowItWorks } from '../components/home/HowitWorks';
 import { NewsSection } from '../components/home/NewsSection';
 import { CallToAction } from '../components/home/CallToAction';
+import AnimatedBackground from '../components/common/AnimatedBackground';
 
 const pageVariants = {
   initial: {
@@ -34,14 +35,18 @@ const Home = () => {
       exit="out"
       variants={pageVariants}
       transition={pageTransition}
+      className="relative min-h-screen bg-gray-50"
     >
-      <Navbar/>
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <NewsSection />
-      <CallToAction />
-      <Footer />
+      <AnimatedBackground />
+      <div className="relative z-10">
+        <Navbar/>
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <NewsSection />
+        <CallToAction />
+        <Footer />
+      </div>
     </motion.div>
   );
 };
