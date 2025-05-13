@@ -22,7 +22,7 @@ import { Navbar } from '../components/common/Navbar';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import { Footer } from '../components/common/Footer';
 import { useNavigate } from 'react-router-dom';
-import { address, del, main } from 'framer-motion/client';
+import { address, del, main, tr } from 'framer-motion/client';
 import AddShopItemModal from '../components/profile/AddShopItemModal';
 import AddCarModal from '../components/profile/AddCarModal';
 import AddMaintenanceReminderModal from '../components/profile/AddMaintenanceReminderModal';
@@ -71,6 +71,26 @@ async function carOwnerLogout() {
     window.location.href = '/';
   } else {
     console.error('Failed to log out');
+  }
+}
+
+async function fetchCartItems() {
+  try {
+    const response = await fetch('http://localhost:8080/cart/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching cart items:', error);
+    return null;
   }
 }
 
@@ -302,6 +322,7 @@ export default function ProfilePage() {
     const userType = window.localStorage.getItem('userType');
     if (userType === 'carOwner') {
       const data = await fetchUserData(true);
+      const cartItems = await fetchCartItems();
  
       const maintenanceReminders = formattingMaintenanceReminders(data.car);
       // For debugging the fetched data
@@ -327,7 +348,7 @@ export default function ProfilePage() {
         },
         orders: data.orders || [], // Use fetched orders or fallback to demo data
         maintenanceReminders: maintenanceReminders || [], // Use fetched maintenance reminders or fallback to demo data
-        cartItems: data.cart == null ? 0 : data.cart.length,
+        cartItems: cartItems !== null ? cartItems.items.length : 0,
         cars: data.car || [], // Use fetched cars or fallback to empty array
       })
 
@@ -649,7 +670,8 @@ export default function ProfilePage() {
                     {userData.cartItems > 0 ? (
                       <div className="text-center">
                         <p>You have {userData.cartItems} items in your cart</p>
-                        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition w-full transform hover:-translate-y-1 duration-300">
+                        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition w-full transform hover:-translate-y-1 duration-300"
+                        onClick={() => { navigate('/cart') }}>
                           View Cart
                         </button>
                       </div>
@@ -787,7 +809,6 @@ export default function ProfilePage() {
         <AddCarModal
           isOpen={isAddCarModalOpen}
           onClose={() => setIsAddCarModalOpen(false)}
-          onAddCar={handleAddCar}
         />
         <AddMaintenanceReminderModal
           isOpen={isAddReminderModalOpen}
