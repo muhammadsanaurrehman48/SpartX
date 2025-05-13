@@ -8,7 +8,7 @@ import {
     Plus,
     Minus,
     AlertCircle,
-    Tool, Settings, Wrench
+    Settings, Wrench,
 } from 'lucide-react';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
@@ -24,6 +24,24 @@ const MOCK_CART_ITEMS = [
     },
     // Add more mock items as needed
 ];
+
+function formatData (data) {
+    let formattedData = [];
+    const items = data.items;
+    items.forEach(item => {
+        const formattedItem = {
+            id: item.product.productId,
+            name: item.product.productName,
+            price: item.product.price,
+            quantity: item.quantity,
+            image: item.product.images[0] !== null ? item.product.images[0] : '/images/default.jpg',
+            partNumber: item.product.description
+        };
+        formattedData.push(formattedItem);
+    })
+
+    return formattedData;
+}
 
 const Cart = () => {
     const [cartItems, setCartItems] = useState([]);
@@ -66,19 +84,13 @@ const Cart = () => {
         try {
             setLoading(true);
             // For development/testing, use mock data
-            if (process.env.NODE_ENV === 'development') {
-                setTimeout(() => {
-                    setCartItems(MOCK_CART_ITEMS);
-                    setLoading(false);
-                }, 1000);
-                return;
-            }
 
+            console.log('Fetching cart items from API...');
             // Production API call
-            const response = await fetch('http://localhost:5173/api/cart', {
+            const response = await fetch('http://localhost:8080/cart/', {
+                method: 'GET',
                 credentials: 'include',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -88,7 +100,9 @@ const Cart = () => {
             }
 
             const data = await response.json();
-            setCartItems(data);
+            console.log('Fetched cart items:', data);
+
+            setCartItems(formatData(data));
         } catch (err) {
             setError('Failed to load cart items. Please try again later.');
             console.error('Cart fetch error:', err);
@@ -243,7 +257,7 @@ return (
                 animate={{ rotate: -360, scale: [1, 1.1, 1] }}
                 transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
             >
-                <Tool size={100} />
+                // Tools icon
             </motion.div>
 
             <motion.div 
@@ -336,7 +350,7 @@ return (
                                             />
                                             <div className="flex-1">
                                                 <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                                                <p className="text-sm text-gray-500">Part #: {item.partNumber}</p>
+                                                <p className="text-sm text-gray-500">Description: {item.partNumber}</p>
                                                 <p className="text-blue-600 font-medium">${item.price.toFixed(2)}</p>
                                             </div>
                                             <div className="flex items-center gap-3">

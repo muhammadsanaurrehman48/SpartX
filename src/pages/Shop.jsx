@@ -154,6 +154,28 @@ async function fetchProducts() {
   }
 }
 
+async function addToCart(productId) {
+  try {
+    const response = await fetch(`http://localhost:8080/cart/${productId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+      return false;
+    }
+    const data = await response.json();
+    return true;
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    return false;
+  }
+}
+
 const ProductCard = ({ product, onClick }) => {
   return (
     <div 
@@ -255,7 +277,12 @@ const ProductDetail = ({ product, onClose, onAddToCart }) => {
               
               <div className="mt-8 flex space-x-4">
                 <button 
-                  onClick={() => onAddToCart(product)}
+                  onClick={() => {
+                    const success = addToCart(product.id);
+                    if (success) {
+                      onAddToCart(product);
+                    }
+                  }}
                   disabled={!product.inStock}
                   className={`px-6 py-3 rounded-lg flex items-center ${
                     product.inStock 
