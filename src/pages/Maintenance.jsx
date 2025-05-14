@@ -24,10 +24,16 @@ export default function MaintenancePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/carowner/cars', {
+        const response = await fetch('http://localhost:8080/cars/', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
           credentials: 'include'
         });
         const data = await response.json();
+
+        console.log('User Cars:', data);
         setUserCars(data);
         
         if (data.length > 0) {
