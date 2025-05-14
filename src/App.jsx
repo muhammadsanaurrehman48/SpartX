@@ -24,7 +24,7 @@ function App() {
           <Route path = "/checkout" element={<Checkout />} />
           <Route path = "/confirm-order" element={<ConfirmOrder />} />
           <Route path = "/news" element={<News />} />
-          <Route path = "/maintenance" element={<Maintenance />} /> 
+          <Route path = "/maintenance" element={<Maintenance />} />
           <Route path = "/cart" element={<Cart />} />
           {/* Other routes will be added later */}
           <Route path="*" element={<div>Page not found</div>} />

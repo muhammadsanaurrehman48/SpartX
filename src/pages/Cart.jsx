@@ -444,9 +444,9 @@ return (
                                              text-white py-3 rounded-md shadow-md hover:shadow-lg 
                                              flex items-center justify-center gap-2 
                                              transition-all duration-300"
-                                    onClick={() => window.location.href = '/checkout'}
+                                    onClick={() => window.location.href = '/confirm-order'}
                                 >
-                                    Proceed to Checkout
+                                    Confirm Order
                                     <ChevronRight className="w-4 h-4" />
                                 </motion.button>
                             </div>

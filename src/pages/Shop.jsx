@@ -1,9 +1,12 @@
 // src/pages/Shop.jsx
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ShoppingCart } from 'lucide-react';
 import { Navbar } from '../components/common/Navbar'; // Updated import to use named export
 import { Footer } from '../components/common/Footer'; // Updated import to use named export
 import AnimatedBackground from '../components/common/AnimatedBackground';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
 // Sample auto parts data (replace with your actual data/API)
 const sampleProducts = [
   {
@@ -154,7 +157,7 @@ async function fetchProducts() {
   }
 }
 
-async function addToCart(productId) {
+async function addToCartAPI(productId) {
   try {
     const response = await fetch(`http://localhost:8080/cart/${productId}`, {
       method: "POST",
@@ -165,9 +168,9 @@ async function addToCart(productId) {
     });
 
     if (!response.ok) {
-      throw new Error("Network response was not ok");
-      return false;
+      throw new Error("Failed to add to cart");
     }
+
     const data = await response.json();
     return true;
   } catch (error) {
@@ -277,12 +280,7 @@ const ProductDetail = ({ product, onClose, onAddToCart }) => {
               
               <div className="mt-8 flex space-x-4">
                 <button 
-                  onClick={() => {
-                    const success = addToCart(product.id);
-                    if (success) {
-                      onAddToCart(product);
-                    }
-                  }}
+                  onClick={() => onAddToCart(product)}
                   disabled={!product.inStock}
                   className={`px-6 py-3 rounded-lg flex items-center ${
                     product.inStock 
@@ -440,6 +438,7 @@ const FilterSidebar = ({ categories, shops, onCategoryChange, onShopChange, onPr
 
 // Main Shop Component
 const Shop = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState(sampleProducts);
   const [filteredProducts, setFilteredProducts] = useState(sampleProducts);
   const [categories, setCategories] = useState([]);
@@ -447,6 +446,7 @@ const Shop = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartItems, setCartItems] = useState([]);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   // Fetch products from API
   useEffect(() => {
@@ -481,6 +481,24 @@ const Shop = () => {
     setCategories(uniqueCategories);
     setShops(uniqueShops);
   }, [products]);
+
+  // Fetch cart count
+  useEffect(() => {
+    fetchCartCount();
+  }, []);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/cart/', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      const totalItems = data.items.reduce((sum, item) => sum + item.quantity, 0);
+      setCartItemCount(totalItems);
+    } catch (error) {
+      console.error('Error fetching cart count:', error);
+    }
+  };
 
   // Filter products based on search query
   const handleSearch = (e) => {
@@ -539,22 +557,16 @@ const Shop = () => {
     setSelectedProduct(null);
   };
 
-  const addToCart = (product) => {
-    // Check if product already in cart
-    const existingProductIndex = cartItems.findIndex(item => item.id === product.id);
-    
-    if (existingProductIndex !== -1) {
-      // Increase quantity if already in cart
-      const updatedCart = [...cartItems];
-      updatedCart[existingProductIndex].quantity += 1;
-      setCartItems(updatedCart);
-    } else {
-      // Add new product to cart
-      setCartItems([...cartItems, { ...product, quantity: 1 }]);
+  const addToCart = async (product) => {
+    const success = await addToCartAPI(product.id);
+    if (success) {
+      setCartItemCount(prev => prev + 1);
+      closeProductDetail();
     }
-    
-    closeProductDetail();
-    // Show cart notification or feedback here
+  };
+
+  const handleCartClick = () => {
+    navigate('/cart');
   };
 
   // Animation classes for cards (staggered appearance)
@@ -641,21 +653,30 @@ const Shop = () => {
         {selectedProduct && (
           <ProductDetail 
             product={selectedProduct}
-            onClose={closeProductDetail}
+            onClose={closeProductDetail}x
             onAddToCart={addToCart}
           />
         )}
 
-        {/* Cart indicator */}
-        <div className="fixed bottom-6 right-6">
-          <button className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 relative">
+        {/* Updated Floating Cart Button */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <motion.button
+            className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 relative"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleCartClick}
+          >
             <ShoppingCart className="h-6 w-6" />
-            {cartItems.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                {cartItems.reduce((total, item) => total + item.quantity, 0)}
-              </span>
+            {cartItemCount > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+              >
+                {cartItemCount}
+              </motion.span>
             )}
-          </button>
+          </motion.button>
         </div>
       </main>
       

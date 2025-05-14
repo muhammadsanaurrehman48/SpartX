@@ -1,33 +1,102 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import AnimatedBackground from '../components/common/AnimatedBackground';
+import { useNavigate } from 'react-router-dom';
 
 const ConfirmOrder = () => {
+  const navigate = useNavigate();
   const [orderDetails, setOrderDetails] = useState({
-    items: [
-      { id: 1, name: 'Premium Brake Pads', price: 249.99, quantity: 1 },
-      { id: 2, name: 'Engine Oil Filter', price: 349.99, quantity: 1 }
-    ],
-    subtotal: 599.98,
-    discount: 0,
-    shipping: 15.00,
-    voucher: ''
+    items: [],
+    subtotal: 0,
+    shipping: 0, // Changed initial shipping to 0
   });
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const calculateShipping = (subtotal) => {
+    // Free shipping for orders over $100
+    return subtotal > 100 ? 0 : 10.00;
+  };
 
-  const handleVoucherApply = (e) => {
-    e.preventDefault();
-    // Add voucher logic here
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [address, setAddress] = useState({
+    fullName: '',
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    phone: ''
+  });
+  const [paymentMethod, setPaymentMethod] = useState('');
+
+  const [orderSummary, setOrderSummary] = useState({
+    subtotal: 0,
+    shipping: 10.00,
+    total: 0
+  });
+
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
+
+  const fetchCartItems = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/cart/', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      const items = data.items.map(item => ({
+        id: item.product.productId,
+        name: item.product.productName,
+        price: item.product.price,
+        quantity: item.quantity
+      }));
+
+      const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const shipping = calculateShipping(subtotal);
+      
+      setOrderDetails({
+        items,
+        subtotal,
+        shipping
+      });
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    setAddress({
+      ...address,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handlePaymentMethodSelect = (method) => {
+    setPaymentMethod(method);
+    if (method === 'online') {
+      alert('Payment gateway integration coming soon! Please add your payment details later.');
+    }
   };
 
   const handleConfirmOrder = async () => {
+    if (!address.fullName || !address.street || !address.city || !address.state || !address.zipCode || !address.phone) {
+      alert('Please fill in all address fields');
+      return;
+    }
+
+    if (!paymentMethod) {
+      alert('Please select a payment method');
+      return;
+    }
+
     setIsProcessing(true);
-    // Add order confirmation logic here
+    
+    // Simulating order processing
     setTimeout(() => {
-      window.location.href = '/checkout';
+      setIsProcessing(false);
+      navigate('/checkout');
     }, 1500);
   };
 
@@ -35,29 +104,6 @@ const ConfirmOrder = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <Navbar />
       <AnimatedBackground />
-      {/* Floating Background Elements */}
-{/*       
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-            y: [0, -20, 0]
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute top-20 left-10 opacity-5"
-        >
-          <svg className="w-32 h-32" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 6.5a2 2 0 100 4 2 2 0 000-4zm0 6a4 4 0 110-8 4 4 0 010 8z"/>
-          </svg>
-        </motion.div>
-        {/* Add more floating automotive-themed SVGs 
-      </div> 
-        */}
-    
 
       <main className="container mx-auto px-4 py-12 relative z-10">
         <motion.div
@@ -66,7 +112,68 @@ const ConfirmOrder = () => {
           className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden"
         >
           <div className="p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-8">Order Summary</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-8">Confirm Order</h1>
+
+            {/* Delivery Address */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Delivery Address</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="Full Name"
+                  value={address.fullName}
+                  onChange={handleAddressChange}
+                  className="border rounded-lg px-4 py-2"
+                  required
+                />
+                <input
+                  type="text"
+                  name="phone"
+                  placeholder="Phone Number"
+                  value={address.phone}
+                  onChange={handleAddressChange}
+                  className="border rounded-lg px-4 py-2"
+                  required
+                />
+                <input
+                  type="text"
+                  name="street"
+                  placeholder="Street Address"
+                  value={address.street}
+                  onChange={handleAddressChange}
+                  className="border rounded-lg px-4 py-2 md:col-span-2"
+                  required
+                />
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="City"
+                  value={address.city}
+                  onChange={handleAddressChange}
+                  className="border rounded-lg px-4 py-2"
+                  required
+                />
+                <input
+                  type="text"
+                  name="state"
+                  placeholder="State"
+                  value={address.state}
+                  onChange={handleAddressChange}
+                  className="border rounded-lg px-4 py-2"
+                  required
+                />
+                <input
+                  type="text"
+                  name="zipCode"
+                  placeholder="ZIP Code"
+                  value={address.zipCode}
+                  onChange={handleAddressChange}
+                  className="border rounded-lg px-4 py-2"
+                  required
+                />
+              </div>
+            </div>
 
             {/* Order Items */}
             <div className="space-y-6 mb-8">
@@ -78,34 +185,33 @@ const ConfirmOrder = () => {
                   className="flex items-center justify-between border-b pb-4"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg"></div>
                     <div>
                       <h3 className="font-semibold text-gray-800">{item.name}</h3>
                       <p className="text-gray-500">Quantity: {item.quantity}</p>
                     </div>
                   </div>
-                  <p className="font-semibold">${item.price.toFixed(2)}</p>
+                  <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
                 </motion.div>
               ))}
             </div>
 
-            {/* Voucher Input */}
+            {/* Payment Method */}
             <div className="mb-8">
-              <form onSubmit={handleVoucherApply} className="flex gap-4">
-                <input
-                  type="text"
-                  placeholder="Enter voucher code"
-                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={orderDetails.voucher}
-                  onChange={(e) => setOrderDetails({...orderDetails, voucher: e.target.value})}
-                />
+              <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+              <div className="space-y-3">
                 <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => handlePaymentMethodSelect('cod')}
+                  className={`w-full p-4 border rounded-lg ${paymentMethod === 'cod' ? 'border-blue-500 bg-blue-50' : ''}`}
                 >
-                  Apply
+                  Cash on Delivery
                 </button>
-              </form>
+                <button
+                  onClick={() => handlePaymentMethodSelect('online')}
+                  className={`w-full p-4 border rounded-lg ${paymentMethod === 'online' ? 'border-blue-500 bg-blue-50' : ''}`}
+                >
+                  Online Payment
+                </button>
+              </div>
             </div>
 
             {/* Order Summary */}
@@ -118,15 +224,22 @@ const ConfirmOrder = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>${orderDetails.shipping.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Discount</span>
-                  <span>-${orderDetails.discount.toFixed(2)}</span>
+                  <div className="text-right">
+                    {orderDetails.subtotal > 100 ? (
+                      <span className="text-green-600">Free Shipping</span>
+                    ) : (
+                      <span>${orderDetails.shipping.toFixed(2)}</span>
+                    )}
+                    <p className="text-sm text-gray-500">
+                      {orderDetails.subtotal > 100 
+                        ? "Free shipping applied!" 
+                        : `Free shipping on orders over $100 (${(100 - orderDetails.subtotal).toFixed(2)} away)`}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex justify-between pt-4 border-t font-bold text-lg">
                   <span>Total</span>
-                  <span>${(orderDetails.subtotal + orderDetails.shipping - orderDetails.discount).toFixed(2)}</span>
+                  <span>${(orderDetails.subtotal + orderDetails.shipping).toFixed(2)}</span>
                 </div>
               </div>
             </div>
