@@ -25,8 +25,25 @@ const MOCK_CART_ITEMS = [
     // Add more mock items as needed
 ];
 
-function formatData (data) {
+
+const Cart = () => {
+    const [cartItems, setCartItems] = useState([]);
+    const [voucher, setVoucher] = useState('');
+    const [discount, setDiscount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [cartId, setCartId] = useState(-1);
+
+    // Animation variants
+    const containerVariants = {
+        initial: { opacity: 0 },
+        animate: { opacity: 1, transition: { duration: 0.5 } },
+        exit: { opacity: 0 }
+    };
+
+    function formatData (data) {
     let formattedData = [];
+    setCartId(data.cartId);
     const items = data.items;
     items.forEach(item => {
         const formattedItem = {
@@ -42,20 +59,6 @@ function formatData (data) {
 
     return formattedData;
 }
-
-const Cart = () => {
-    const [cartItems, setCartItems] = useState([]);
-    const [voucher, setVoucher] = useState('');
-    const [discount, setDiscount] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    // Animation variants
-    const containerVariants = {
-        initial: { opacity: 0 },
-        animate: { opacity: 1, transition: { duration: 0.5 } },
-        exit: { opacity: 0 }
-    };
 
     const itemVariants = {
         initial: { opacity: 0, x: -20 },
@@ -198,7 +201,9 @@ const Cart = () => {
     }
     const removeItem = async (itemId) => {
         try {
-            await fetch(`/api/cart/${itemId}`, { method: 'DELETE' });
+            await fetch(`http://localhost:8080/cart/${itemId}`, { method: 'DELETE' , 
+                credentials: 'include',
+            });
             setCartItems(items => items.filter(item => item.id !== itemId));
         } catch (err) {
             setError('Failed to remove item');
