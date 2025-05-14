@@ -12,6 +12,8 @@ const ConfirmOrder = () => {
     subtotal: 0,
     shipping: 0, // Changed initial shipping to 0
   });
+  const [cartId, setCartId] = useState(-1);
+
 
   const calculateShipping = (subtotal) => {
     // Free shipping for orders over $100
@@ -45,6 +47,7 @@ const ConfirmOrder = () => {
         credentials: 'include'
       });
       const data = await response.json();
+
       
       const items = data.items.map(item => ({
         id: item.product.productId,
@@ -52,6 +55,8 @@ const ConfirmOrder = () => {
         price: item.product.price,
         quantity: item.quantity
       }));
+
+      setCartId(data.cartId);
 
       const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const shipping = calculateShipping(subtotal);
@@ -81,6 +86,7 @@ const ConfirmOrder = () => {
   };
 
   const handleConfirmOrder = async () => {
+    console.log(cartId);
     if (!address.fullName || !address.street || !address.city || !address.state || !address.zipCode || !address.phone) {
       alert('Please fill in all address fields');
       return;
@@ -94,11 +100,20 @@ const ConfirmOrder = () => {
     setIsProcessing(true);
     
     // Simulating order processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      navigate('/checkout');
-    }, 1500);
-  };
+    const response = await fetch(`http://localhost:8080/orders/checkout/${cartId}`, {
+      method: "POST",
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Order confirmed:', data);
+      alert('Order confirmed! Thank you for your purchase.');
+      navigate('/profile');
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
