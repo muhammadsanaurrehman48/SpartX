@@ -34,50 +34,26 @@ export default function MaintenancePage() {
   });
 
   useEffect(() => {
-    const checkAuthAndFetchData = async () => {
-      const isLoggedIn = window.localStorage.getItem('login') === 'true';
-      const userType = window.localStorage.getItem('userType');
-      
-      if (!isLoggedIn || userType !== 'carOwner') {
-        navigate('/login');
-        return;
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/carowner/cars', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        setUserCars(data);
+        
+        if (data.length > 0) {
+          await fetchMaintenanceData(data[0].carId);
+          setSelectedCar(data[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
-
-      await fetchUserCars();
     };
-
-    checkAuthAndFetchData();
-  }, [navigate]);
-
-  const fetchUserCars = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('http://localhost:8080/carowner/profile', {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data');
-      }
-
-      const userData = await response.json();
-      const cars = userData.car || [];
-      
-      setUserCars(cars);
-      
-      if (cars.length > 0) {
-        setSelectedCar(cars[0]);
-        await fetchMaintenanceData(cars[0].carId);
-      }
-    } catch (error) {
-      setError('Error loading cars: ' + error.message);
-      setUserCars([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchData();
+  }, []);
 
   const fetchMaintenanceData = async (carId) => {
     try {
